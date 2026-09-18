@@ -23,104 +23,47 @@ const questions=[
 ["Your plans suddenly change. Your first reaction is…",[["adapt","Fine. What’s the new plan?"],["annoyed","Wait, we had a plan."],["relieved","Honestly? Kind of a relief."],["excited","Interesting. Let’s see."]]],
 ["What do you want us to predict?",[["love","Love & relationships"],["career","Career & ambition"],["money","Money & opportunity"],["next","What happens next"]]]
 ];
-const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>UnPredictMe — Let’s see if we can figure you out.</title><meta name="description" content="A playful AI prediction about you. Answer a few questions, see if we get you, and come back tomorrow for another prediction."><meta name="robots" content="index,follow"><style>
-:root{--ink:#123a36;--muted:#58716d;--aqua:#78e6d5;--cream:#f7fffd;--line:#b9ebe3}*{box-sizing:border-box}html{min-height:100%;background:var(--cream)}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);overflow-x:hidden}body:before,body:after{content:"";position:fixed;width:42vw;height:42vw;border-radius:50%;filter:blur(55px);opacity:.48;z-index:-2;animation:float 12s ease-in-out infinite alternate}body:before{background:#9af3e4;top:-13vw;left:-8vw}body:after{background:#c8e8ff;right:-12vw;bottom:-14vw;animation-delay:-5s}@keyframes float{to{transform:translate(30px,25px) scale(1.08)}}main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 18px}.shell{width:min(760px,100%);text-align:center}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#168d82}h1{font-size:clamp(58px,13vw,112px);line-height:.84;letter-spacing:-.075em;margin:16px 0 22px}.lede{font-size:clamp(19px,3vw,25px);line-height:1.35;color:var(--muted);max-width:590px;margin:0 auto 28px}.card{position:relative;overflow:hidden;text-align:left;background:rgba(255,255,255,.84);border:1px solid rgba(185,235,227,.95);border-radius:32px;padding:clamp(24px,5vw,46px);box-shadow:0 25px 80px rgba(26,104,95,.12);backdrop-filter:blur(16px)}.progress{height:7px;background:#e7f7f4;border-radius:99px;margin-bottom:30px;overflow:hidden}.bar{height:100%;background:var(--aqua);border-radius:99px;transition:width .35s ease}.qnum{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#4eaaa0}.question{font-size:clamp(26px,5vw,40px);line-height:1.08;letter-spacing:-.035em;margin:10px 0 24px}.answers{display:grid;gap:11px}.answer{width:100%;padding:17px 18px;border:1px solid var(--line);border-radius:17px;background:#fff;color:var(--ink);font-size:17px;font-weight:650;text-align:left;cursor:pointer;transition:.18s transform,.18s background,.18s box-shadow}.answer:hover,.answer:focus-visible{transform:translateY(-2px);background:#f0fffc;box-shadow:0 8px 24px rgba(30,120,110,.10);outline:none}.helper{font-size:13px;color:#78908d;text-align:center;margin:20px 0 0}.result{text-align:center}.result .prediction{text-align:left;background:#f1fffc;border:1px solid var(--line);border-radius:24px;padding:24px;margin:24px 0}.result h2{font-size:clamp(30px,6vw,46px);letter-spacing:-.04em;margin:10px 0}.result .prediction h3{font-size:23px;margin:0 0 10px}.result .prediction p{font-size:19px;line-height:1.6;color:#42635f;margin:0}.buttons{display:grid;gap:10px}.primary,.secondary{border:0;border-radius:16px;padding:17px;font-size:16px;font-weight:800;cursor:pointer}.primary{background:var(--ink);color:#fff}.secondary{background:#e5f7f3;color:var(--ink)}.email{display:flex;gap:10px;margin-top:22px}.email input{min-width:0;flex:1;border:1px solid var(--line);border-radius:15px;padding:16px;font-size:16px;background:#fff}.email button{border:0;border-radius:15px;padding:0 20px;background:var(--ink);color:#fff;font-weight:800;cursor:pointer}.consent{display:flex;gap:9px;align-items:flex-start;text-align:left;font-size:12px;color:#718783;margin:12px 2px 0}.consent input{margin-top:2px}.status{min-height:20px;color:#b04b3c;font-size:13px;margin-top:10px}.machine{height:86px;display:flex;align-items:center;justify-content:center;gap:18px;margin:-4px 0 8px}.machine span{display:grid;place-items:center;width:58px;height:58px;border-radius:20px;background:#effffb;border:1px solid var(--line);font-size:28px;font-weight:900;box-shadow:0 10px 30px rgba(30,120,110,.08);animation:bob 3s ease-in-out infinite}.machine span:nth-child(2){width:72px;height:72px;border-radius:24px;background:var(--aqua);font-size:36px;animation-delay:-1.1s}.machine span:nth-child(3){animation-delay:-2s}@keyframes bob{50%{transform:translateY(-7px) rotate(3deg)}}.daily{margin-top:16px;font-size:14px;color:#58716d}.daily strong{color:var(--ink)}@media(max-width:520px){main{padding:18px 14px}.card{border-radius:25px}.email{display:grid}.email button{padding:16px}.question{font-size:29px}}
-.intro{color:var(--muted);line-height:1.55;margin:0 auto 20px;max-width:520px;font-size:16px}.answer{display:flex;align-items:center;gap:12px}.choice-dot{width:12px;height:12px;border:2px solid #9ddbd2;border-radius:50%;flex:0 0 auto;transition:.2s}.answer:hover .choice-dot{background:var(--aqua);border-color:var(--aqua)}.reading{text-align:center}.pulse{display:flex;justify-content:center;gap:7px;margin:24px}.pulse i{display:block;width:9px;height:9px;border-radius:50%;background:var(--aqua);animation:pulse 1s infinite}.pulse i:nth-child(2){animation-delay:.15s}.pulse i:nth-child(3){animation-delay:.3s}@keyframes pulse{50%{transform:translateY(-8px);opacity:.45}}.prediction-mark{font-size:28px;color:#168d82;margin-bottom:8px}.feedback{text-align:center;color:#168d82;font-weight:700;margin:16px 0 0}</style></head><body><main><div class="shell"><div class="eyebrow">A daily guessing game</div><h1>UnPredictMe</h1><p class="lede"><strong>Predicting you is figuring you out.</strong><br>Answer a few things. We’ll make a call. Then come back tomorrow and see what else we notice.</p><section class="card" id="app"></section><p class="daily">No birth chart. No homework. Just <strong>one new prediction at a time.</strong></p></div></main><script>
+const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>UnPredictMe — Give us your email. We'll predict you.</title><meta name="description" content="UnPredictMe makes a playful prediction about you. Give us your email, get your prediction, and come back tomorrow for another."><meta name="robots" content="index,follow"><style>
+:root{--ink:#123a36;--muted:#58716d;--aqua:#78e6d5;--cream:#f7fffd;--line:#b9ebe3}*{box-sizing:border-box}html{min-height:100%;background:var(--cream)}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);overflow-x:hidden}body:before,body:after{content:"";position:fixed;width:42vw;height:42vw;border-radius:50%;filter:blur(55px);opacity:.48;z-index:-2;animation:float 12s ease-in-out infinite alternate}body:before{background:#9af3e4;top:-13vw;left:-8vw}body:after{background:#c8e8ff;right:-12vw;bottom:-14vw;animation-delay:-5s}@keyframes float{to{transform:translate(30px,25px) scale(1.08)}}main{min-height:calc(100vh - 82px);display:flex;align-items:center;justify-content:center;padding:42px 18px}.shell{width:min(720px,100%);text-align:center}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#168d82}h1{font-size:clamp(58px,13vw,112px);line-height:.84;letter-spacing:-.075em;margin:16px 0 20px}.lede{font-size:clamp(20px,3vw,27px);line-height:1.35;color:var(--muted);max-width:600px;margin:0 auto 30px}.card{position:relative;overflow:hidden;text-align:left;background:rgba(255,255,255,.88);border:1px solid rgba(185,235,227,.95);border-radius:32px;padding:clamp(25px,5vw,48px);box-shadow:0 25px 80px rgba(26,104,95,.12);backdrop-filter:blur(16px)}.machine{height:82px;display:flex;align-items:center;justify-content:center;gap:16px;margin:-4px 0 8px}.machine span{display:grid;place-items:center;width:56px;height:56px;border-radius:19px;background:#effffb;border:1px solid var(--line);font-size:27px;box-shadow:0 10px 30px rgba(30,120,110,.08);animation:bob 3s ease-in-out infinite}.machine span:nth-child(2){width:70px;height:70px;border-radius:23px;background:var(--aqua);font-size:36px;animation-delay:-1.1s}.machine span:nth-child(3){animation-delay:-2s}@keyframes bob{50%{transform:translateY(-7px) rotate(3deg)}}.qnum{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#4eaaa0;text-align:center}.question{font-size:clamp(30px,6vw,46px);line-height:1.05;letter-spacing:-.04em;margin:10px 0 12px;text-align:center}.intro{color:var(--muted);line-height:1.55;margin:0 auto 20px;max-width:540px;font-size:16px;text-align:center}.email{display:flex;gap:10px;margin-top:22px}.email input{min-width:0;flex:1;border:1px solid var(--line);border-radius:15px;padding:17px;font-size:16px;background:#fff;color:var(--ink)}button{font-family:inherit}.primary,.secondary{border:0;border-radius:16px;padding:17px;font-size:16px;font-weight:800;cursor:pointer;transition:.18s transform,.18s box-shadow}.primary{background:var(--ink);color:#fff}.secondary{background:#e5f7f3;color:var(--ink)}.primary:hover,.secondary:hover{transform:translateY(-2px);box-shadow:0 9px 25px rgba(30,120,110,.12)}.consent{display:flex;gap:9px;align-items:flex-start;text-align:left;font-size:12px;color:#718783;margin:12px 2px 0}.consent input{margin-top:2px}.helper{font-size:13px;color:#78908d;text-align:center;margin:18px 0 0}.reading{text-align:center}.pulse{display:flex;justify-content:center;gap:7px;margin:28px}.pulse i{display:block;width:9px;height:9px;border-radius:50%;background:var(--aqua);animation:pulse 1s infinite}.pulse i:nth-child(2){animation-delay:.15s}.pulse i:nth-child(3){animation-delay:.3s}@keyframes pulse{50%{transform:translateY(-8px);opacity:.45}}.prediction{background:#f1fffc;border:1px solid var(--line);border-radius:24px;padding:25px;margin:24px 0}.prediction h3{font-size:25px;margin:0 0 10px}.prediction p{font-size:19px;line-height:1.6;color:#42635f;margin:0}.prediction-mark{font-size:28px;color:#168d82;margin-bottom:8px}.buttons{display:grid;gap:10px}.feedback{text-align:center;color:#168d82;font-weight:700;margin:16px 0 0}.page{max-width:760px;margin:0 auto;text-align:left}.page h2{font-size:clamp(32px,6vw,52px);letter-spacing:-.045em;text-align:center;margin:8px 0 20px}.page h3{font-size:20px;margin:28px 0 8px}.page p,.page li{color:#4f6965;line-height:1.7;font-size:16px}.page ul{padding-left:22px}.price{font-size:42px;font-weight:900;letter-spacing:-.05em;text-align:center;margin:15px 0}.nav{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;padding:22px 18px 0}.nav a,footer a{color:#4e7771;text-decoration:none;font-size:13px;font-weight:700}.nav a:hover,footer a:hover{text-decoration:underline}footer{padding:28px 18px 36px;text-align:center;color:#78908d;font-size:12px}footer .links{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:10px}@media(max-width:560px){main{padding:28px 14px}.card{border-radius:25px}.email{display:grid}.email button{padding:16px}.nav{gap:12px}}
+</style></head><body><nav class="nav"><a href="/">Predict</a><a href="/about">About</a><a href="/pricing">Pricing</a><a href="/contact">Contact</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav><main><div class="shell" id="app"></div></main><footer><div class="links"><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/contact">Contact</a></div>© 2026 UnPredictMe</footer><script>
 (function(){
-  var quizQuestions=[["It’s Saturday morning. Your ideal start is…",[["slow","A slow start. Coffee, no rush."],["out","Already out doing something."],["productive","Knock something off the list."],["random","See what happens."]]],["In a group, you usually…",[["observe","Watch the room first."],["connect","Find one person to talk to."],["lead","Get everyone moving."],["surprise","Do something nobody expected."]]],["A tempting opportunity appears with almost no warning. You…",[["yes","Say yes, then figure it out."],["think","Ask for a little time."],["research","Need the details first."],["instinct","Trust your gut."]]],["Your plans suddenly change. Your first reaction is…",[["adapt","Fine. What’s the new plan?"],["annoyed","Wait, we had a plan."],["relieved","Honestly? Kind of a relief."],["excited","Interesting. Let’s see."]]],["What do you want us to predict?",[["love","Love & relationships"],["career","Career & ambition"],["money","Money & opportunity"],["next","What happens next"]]]];
-  var app=document.getElementById("app");
-  var email="";
-  var marketing=false;
-  var answers=[];
-  var prediction=null;
-
-  function esc(s){
-    return String(s).replace(/[&<>"']/g,function(ch){
-      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
-    });
-  }
-  function machine(){
-    return '<div class="machine" aria-hidden="true"><span>✦</span><span>?</span><span>✦</span></div>';
-  }
-  function renderStart(){
-    app.innerHTML=machine()+
-      '<div class="qnum">READY WHEN YOU ARE</div>'+
-      '<div class="question">Let’s see if we can figure you out.</div>'+
-      '<p class="intro">Give us your email. We’ll make a prediction about you — then you can tell us whether we got it.</p>'+
-      '<form id="startForm">'+
-      '<div class="email"><input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email" required autofocus><button class="primary" type="submit">Predict me →</button></div>'+
-      '<label class="consent"><input id="marketingInput" type="checkbox"><span>Yes, send me occasional UnPredictMe predictions and product updates. (Optional.)</span></label>'+
-      '</form>'+
-      '<div class="helper">No birth chart. No homework. Just a very confident guess.</div>';
-    document.getElementById("startForm").onsubmit=function(ev){
-      ev.preventDefault();
-      var input=document.getElementById("emailInput");
-      if(!input.checkValidity()){input.reportValidity();return;}
-      email=input.value.trim();
-      marketing=document.getElementById("marketingInput").checked;
-      answers=[];
-      renderQuestion();
-    };
-    setTimeout(function(){var x=document.getElementById("emailInput");if(x)x.focus();},0);
-  }
-  function renderQuestion(){
-    var q=quizQuestions[answers.length];
-    app.innerHTML=
-      '<div class="progress"><div class="bar" style="width:'+(((answers.length+1)/quizQuestions.length)*100)+'%"></div></div>'+
-      '<div class="qnum">QUESTION '+(answers.length+1)+' OF '+quizQuestions.length+'</div>'+
-      '<div class="question">'+esc(q[0])+'</div>'+
-      '<div class="answers">'+q[1].map(function(x){
-        return '<button class="answer" type="button" data-v="'+esc(x[0])+'"><span class="choice-dot"></span>'+esc(x[1])+'</button>';
-      }).join("")+'</div>'+
-      '<div class="helper">Go with your first instinct. ✨</div>';
-    Array.prototype.forEach.call(app.querySelectorAll(".answer"),function(btn){
-      btn.onclick=function(){
-        answers.push(btn.getAttribute("data-v"));
-        if(answers.length===quizQuestions.length) submitPrediction();
-        else renderQuestion();
-      };
-    });
+  var predictions=[
+    ["The thing you keep circling","You are closer to making a decision than you think. You have already done most of the thinking; what is left is admitting which option you actually want."],
+    ["Your next yes","A small opportunity will arrive looking more casual than important. Pay attention to the invitation, introduction, or idea that feels easy to say yes to."],
+    ["The part of you people miss","You come across as more certain than you feel. You tend to process the complicated part privately, then show up with a surprisingly clear answer."],
+    ["A change of plans","Something will not go exactly as planned, and that may be the useful part. Stay curious instead of trying to force the original plan back into place."],
+    ["What is coming into focus","You are becoming less interested in proving yourself and more interested in choosing what actually matters to you. That shift will make one decision much easier."],
+    ["Your wildcard","You are harder to predict when you genuinely care. Expect yourself to break one of your usual rules for a person, project, or possibility that matters."]
+  ];
+  var app=document.getElementById("app"),email="",marketing=false,prediction=null;
+  function esc(s){return String(s).replace(/[&<>"']/g,function(ch){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]})}
+  function machine(){return '<div class="machine" aria-hidden="true"><span>✦</span><span>?</span><span>✦</span></div>'}
+  function start(){
+    app.innerHTML='<div class="eyebrow">A daily guessing game</div><h1>UnPredictMe</h1><p class="lede"><strong>Give us your email. We’ll predict you.</strong></p><section class="card">'+machine()+'<div class="qnum">READY WHEN YOU ARE</div><div class="question">Let’s see if we can figure you out.</div><p class="intro">One email. One prediction. No quiz, no birth chart, no homework.</p><form id="form"><div class="email"><input id="email" type="email" placeholder="you@example.com" autocomplete="email" required autofocus><button class="primary" type="submit">Predict me →</button></div><label class="consent"><input id="marketing" type="checkbox"><span>Yes, send me occasional UnPredictMe predictions and product updates. (Optional.)</span></label></form><div class="helper">Your email is used to deliver your prediction. See our <a href="/privacy">Privacy Policy</a>.</div></section>';
+    document.getElementById("form").onsubmit=function(ev){ev.preventDefault();var input=document.getElementById("email");if(!input.checkValidity()){input.reportValidity();return}email=input.value.trim();marketing=document.getElementById("marketing").checked;submitPrediction()};
   }
   function submitPrediction(){
-    app.innerHTML=machine()+
-      '<div class="qnum">READING THE SIGNALS</div>'+
-      '<div class="question">Okay. Let’s make a call.</div>'+
-      '<div class="pulse"><i></i><i></i><i></i></div>'+
-      '<p class="helper">Connecting the dots…</p>';
-    fetch("/api/signup",{
-      method:"POST",
-      headers:{"content-type":"application/json"},
-      body:JSON.stringify({email:email,answers:answers,marketing:marketing})
-    }).then(function(r){
-      return r.text().then(function(text){
-        var data;
-        try{data=JSON.parse(text);}catch(_){throw new Error("The prediction service returned an invalid response.");}
-        if(!r.ok)throw new Error(data.error||"Something went wrong.");
-        return data;
-      });
-    }).then(function(data){
-      prediction=data.prediction;
-      renderResult();
-    }).catch(function(err){
-      app.innerHTML='<div class="result"><div class="qnum">TINY GLITCH</div><div class="question">We lost the thread.</div><p class="helper">'+esc(err.message)+'</p><button class="primary" id="retry" type="button">Try again</button></div>';
-      document.getElementById("retry").onclick=function(){email="";answers=[];renderStart();};
-    });
+    app.innerHTML='<div class="eyebrow">UNPREDICTING YOU</div><h1>Hmm…</h1><section class="card reading">'+machine()+'<div class="qnum">READING THE SIGNALS</div><div class="question">Let’s make a call.</div><div class="pulse"><i></i><i></i><i></i></div><p class="helper">Putting a few things together…</p></section>';
+    fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,answers:[],marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The prediction service returned an invalid response.")}if(!r.ok)throw new Error(d.error||"Something went wrong.");return d})}).then(function(d){prediction=d.prediction;result()}).catch(function(err){app.innerHTML='<div class="eyebrow">TINY GLITCH</div><h1>Oops.</h1><section class="card"><div class="question">We lost the prediction.</div><p class="helper">'+esc(err.message)+'</p><div style="text-align:center;margin-top:20px"><button class="primary" id="retry">Try again</button></div></section>';document.getElementById("retry").onclick=start});
   }
-  function renderResult(){
-    app.innerHTML=
-      '<div class="result">'+
-      '<div class="eyebrow">OUR PREDICTION</div>'+
-      '<h2>Okay. We have a guess.</h2>'+
-      '<div class="prediction"><div class="prediction-mark">✦</div><h3>'+esc(prediction.title)+'</h3><p>'+esc(prediction.text)+'</p></div>'+
-      '<div class="buttons"><button class="primary" id="yes" type="button">That’s me. 👀</button><button class="secondary" id="no" type="button">Not even close.</button></div>'+
-      '<p class="helper">Either way, come back tomorrow. We’ll make another prediction.</p>'+
-      '</div>';
-    document.getElementById("yes").onclick=function(){app.insertAdjacentHTML("beforeend",'<p class="feedback" role="status">We’ll keep that one in mind. See you tomorrow.</p>');};
-    document.getElementById("no").onclick=function(){app.insertAdjacentHTML("beforeend",'<p class="feedback" role="status">Fair. Tomorrow we’ll try again.</p>');};
+  function result(){
+    app.innerHTML='<div class="eyebrow">OUR PREDICTION</div><h1>Okay. We have a guess.</h1><section class="card"><div class="prediction"><div class="prediction-mark">✦</div><h3>'+esc(prediction.title)+'</h3><p>'+esc(prediction.text)+'</p></div><div class="buttons"><button class="primary" id="yes">That’s me. 👀</button><button class="secondary" id="no">Not even close.</button></div><p class="helper">Either way, come back tomorrow. We’ll make another prediction.</p></section>';
+    document.getElementById("yes").onclick=function(){app.insertAdjacentHTML("beforeend",'<p class="feedback">We’ll take that. See you tomorrow.</p>')};
+    document.getElementById("no").onclick=function(){app.insertAdjacentHTML("beforeend",'<p class="feedback">Fair. We’ll try again tomorrow.</p>')};
   }
-  renderStart();
+  function page(title,body){app.innerHTML='<section class="card page"><div class="eyebrow">'+esc(title.toUpperCase())+'</div><h2>'+esc(title)+'</h2>'+body+'</section>'}
+  function route(){
+    var p=location.pathname;
+    if(p==="/about")return page("About UnPredictMe",'<p>UnPredictMe is a playful prediction service built around one simple idea: give us your email and we’ll make a prediction about you.</p><p>We are not trying to tell you your future with certainty. The experience is entertainment — a little curiosity, a little surprise, and a reason to come back tomorrow.</p><h3>How it works</h3><ol><li>Enter your email.</li><li>We generate a playful prediction.</li><li>You can tell us whether we got you.</li><li>Come back another day for another prediction.</li></ol><p>UnPredictMe is designed to be simple: no long quiz, no birth chart, and no account setup.</p>');
+    if(p==="/pricing")return page("Pricing",'<div class="price">Free</div><p style="text-align:center">UnPredictMe is currently free during launch.</p><h3>What you get</h3><ul><li>A personalized playful prediction.</li><li>Delivery of your prediction by email.</li><li>Access to the daily guessing experience.</li></ul><h3>Future services</h3><p>We may introduce optional paid features as the product develops. If pricing changes, we will clearly describe the product, price, and terms before a purchase is made.</p>');
+    if(p==="/contact")return page("Contact Us",'<p>Questions about UnPredictMe, your prediction, your email preferences, or the service? We’d like to hear from you.</p><h3>Email</h3><p><a href="mailto:hello@unpredictme.com">hello@unpredictme.com</a></p><h3>What to include</h3><p>If you are contacting us about your account or an email you received, include the email address used with UnPredictMe and a short description of the issue. Please do not send passwords or other sensitive information.</p>');
+    if(p==="/privacy")return page("Privacy Policy",'<p><strong>Last updated: September 18, 2026</strong></p><p>UnPredictMe collects the information you choose to provide when you use the service, including your email address and, where applicable, your response to the optional marketing consent.</p><h3>How we use information</h3><ul><li>To provide and email your requested prediction.</li><li>To operate, secure, troubleshoot, and improve the service.</li><li>To send promotional or product-update emails only when you have opted in.</li></ul><h3>Email delivery</h3><p>We use third-party email infrastructure to deliver messages. Your email address may be processed by our email service provider for that purpose.</p><h3>Data choices</h3><p>You can contact us to ask about the personal information associated with your use of UnPredictMe or to request that we stop sending optional marketing emails. Transactional messages needed to provide a requested service may still be sent.</p><h3>Children</h3><p>UnPredictMe is not intended for children under 13.</p><h3>Changes</h3><p>We may update this policy as the service changes. The date above indicates the latest update.</p>');
+    if(p==="/terms")return page("Terms of Service",'<p><strong>Last updated: September 18, 2026</strong></p><h3>The service</h3><p>UnPredictMe provides playful, AI-assisted predictions for entertainment and personal reflection. Predictions are not promises, guarantees, professional advice, or factual determinations about your future.</p><h3>Using UnPredictMe</h3><p>You agree to provide an email address you are authorized to use and not to misuse the service, interfere with its operation, or submit unlawful content.</p><h3>Emails</h3><p>When you request a prediction, we may send the requested prediction to the email address you provide. Promotional emails are optional and require your consent.</p><h3>Availability</h3><p>We may change, suspend, or discontinue features as the product develops. We aim to keep the service available but do not guarantee uninterrupted operation.</p><h3>Entertainment only</h3><p>Do not rely on an UnPredictMe prediction as a substitute for medical, legal, financial, employment, relationship, or other professional advice or as a guarantee of an outcome.</p><h3>Contact</h3><p>Questions about these terms can be sent to <a href="mailto:hello@unpredictme.com">hello@unpredictme.com</a>.</p>');
+    start();
+  }
+  route();
 })();
-</script></body></html>`;
+</script></body></html>
 export default {async fetch(request,env){
  const url=new URL(request.url);
  if(request.method==="POST"&&url.pathname==="/api/signup"){
