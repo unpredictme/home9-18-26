@@ -63,7 +63,7 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
   }
   route();
 })();
-</script></body></html>
+</script></body></html>`;
 export default {async fetch(request,env){
  const url=new URL(request.url);
  if(request.method==="POST"&&url.pathname==="/api/signup"){
