@@ -1,33 +1,40 @@
-# UnPredictMe — Cloudflare Worker MVP
+# UnPredictMe
 
-A deliberately simple landing-page prototype:
-1. User enters an email.
-2. The browser produces a playful prediction.
-3. The result asks whether we got them right.
+UnPredictMe is a lightweight daily guessing game: answer a few playful questions, get a personalized prediction, and come back tomorrow for another one.
 
-## Run locally
-```bash
-npm install
-npx wrangler dev
-```
+## Product loop
+
+1. Answer a few playful questions using explicit signals.
+2. Get a prediction immediately.
+3. React with “That’s me” or “Not even close.”
+4. Receive the prediction by email through Brevo when configured.
+5. Come back tomorrow for a new prediction without having to complete a daily mood log.
+
+The daily loop is intentionally closer to a fortune-teller relationship than a conventional check-in: **“What does UnPredictMe have to say about me today?”**
+
+## Brevo
+
+Set these Cloudflare Worker secrets:
+
+    npx wrangler secret put BREVO_API_KEY
+    npx wrangler secret put BREVO_SENDER_EMAIL
+    npx wrangler secret put BREVO_SENDER_NAME
+
+Transactional delivery is separate from marketing consent. The optional marketing checkbox is not currently used to subscribe a contact to a marketing list.
 
 ## Deploy
-```bash
-npx wrangler login
-npx wrangler deploy
-```
 
-## Important next step
-This MVP intentionally does NOT pretend an email address contains enough information to infer a person. For production, collect a small set of explicit, consented signals (or ask 1–3 playful questions), generate the prediction server-side, and send follow-up predictions only after clear opt-in.
+    npm install
+    npx wrangler login
+    npx wrangler deploy
 
-## SEO / GEO
-Primary intent to test: **AI fortune teller** and **AI prediction about me**.
-Secondary pages can target:
-- AI fortune teller
-- predict my future
-- tell me about myself AI
-- personality prediction
-- what will happen to me
-- future prediction quiz
+The Worker name is `home9-18-26`, matching the existing deployment.
 
-Do not create dozens of thin keyword pages. Build one genuinely useful interactive experience and supporting explanatory pages.
+## Local development
+
+    npm install
+    npx wrangler dev
+
+## Production next steps
+
+Add rate limiting/bot protection, analytics, privacy/terms pages, durable storage for feedback/daily history, and a proper Brevo contact/list flow only after explicit marketing opt-in.
