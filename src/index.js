@@ -1,44 +1,47 @@
-const html = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>UnPredictMe — We make a guess about you</title>
-<meta name="description" content="Give UnPredictMe an email. We'll make a fun prediction about you. See if we can figure you out.">
-<meta name="robots" content="index,follow">
-<meta property="og:title" content="UnPredictMe — We make a guess about you">
-<meta property="og:description" content="Give us almost nothing. We'll still make a guess.">
-<style>
-body{font-family:Inter,system-ui,sans-serif;margin:0;background:#faf8f4;color:#171717}
-main{max-width:760px;margin:0 auto;padding:72px 22px;text-align:center}
-h1{font-size:clamp(48px,10vw,92px);line-height:.9;margin:20px 0 16px;letter-spacing:-.06em}
-p{font-size:20px;line-height:1.5;color:#555}
-.card{margin:38px auto;padding:30px;border:1px solid #ddd;border-radius:24px;background:white;max-width:540px;box-shadow:0 10px 40px #0000000b}
-input{width:100%;box-sizing:border-box;padding:16px;border:1px solid #ccc;border-radius:12px;font-size:17px;margin:8px 0}
-button{width:100%;padding:16px;border:0;border-radius:12px;background:#171717;color:white;font-size:17px;cursor:pointer;margin-top:8px}
-.small{font-size:13px;color:#777}.prediction{text-align:left;font-size:20px;line-height:1.55}.badge{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:#777}
-</style></head>
-<body><main>
-<div class="badge">AI-powered guessing game</div>
-<h1>UnPredictMe</h1>
-<p><strong>Give us an email. We'll make a prediction about you.</strong><br>Let's see if we can figure you out.</p>
-<section class="card" id="app">
-<form id="f"><input id="email" type="email" placeholder="you@example.com" required><button>Make My Prediction →</button></form>
-<p class="small">For entertainment and self-reflection. We don't claim to know your future.</p>
-</section>
-</main>
-<script>
 const predictions=[
-"You're more curious about what people think of you than you let on. You probably test things before you trust them—and right now, you're testing us.",
-"You like having a plan, but you're at your most interesting when the plan changes. An unexpected invitation is more likely to get a yes from you than a carefully scheduled one.",
-"You're more ambitious than you advertise. You may not care much about looking successful, but you care a lot about making progress—and you notice when you're standing still.",
-"You probably have one decision you've been putting off. Not because you don't know what you want, but because making it real would force you to change something else.",
-"You tend to appear more relaxed than you actually are. You think things through privately, then make your decision look effortless.",
-"You're harder to predict around people you really like. When you care, you break your own rules more often than you'd admit."
+["The thing you keep circling","You are closer to making a decision than you think. You have already done most of the thinking; what is left is admitting which option you actually want."],
+["Your next yes","A small opportunity will arrive looking more casual than important. Pay attention to the invitation, introduction, or idea that feels easy to say yes to."],
+["The part of you people miss","You come across as more certain than you feel. You tend to process the complicated part privately, then show up with a surprisingly clear answer."],
+["A change of plans","Something will not go exactly as planned, and that may be the useful part. Stay curious instead of trying to force the original plan back into place."],
+["What is coming into focus","You are becoming less interested in proving yourself and more interested in choosing what actually matters to you. That shift will make one decision much easier."],
+["Your wildcard","You are harder to predict when you genuinely care. Expect yourself to break one of your usual rules for a person, project, or possibility that matters."]
 ];
-function pick(s){let n=0;for(let c of s)n=(n*31+c.charCodeAt(0))>>>0;return predictions[n%predictions.length]}
-document.getElementById('f').onsubmit=e=>{e.preventDefault();const email=document.getElementById('email').value;const p=pick(email);document.getElementById('app').innerHTML='<div class="badge">Our prediction</div><div class="prediction"><h2>We have a guess.</h2><p>'+p+'</p><hr><p><strong>Did we get you?</strong></p><button onclick="location.reload()">Yes — that's me</button><button style="background:#eee;color:#171717" onclick="location.reload()">Not even close</button></div><p class="small">This demo makes playful guesses from the input only. A production version should use explicit user-provided signals and a real email-delivery provider.</p>'}
-</script></body></html>`;
-
-export default { async fetch(request) {
-  return new Response(html, {headers: {"content-type":"text/html;charset=UTF-8"}});
+function hash(input){let n=2166136261;for(const c of input)n=Math.imul(n^c.charCodeAt(0),16777619);return n>>>0}
+function makePrediction(email,answers,date=new Date().toISOString().slice(0,10)){const s=[email.toLowerCase().trim(),date,...answers].join("|");const p=predictions[hash(s)%predictions.length];return {title:p[0],text:p[1]}}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function sendBrevo(env,email,p){
+ if(!env.BREVO_API_KEY||!env.BREVO_SENDER_EMAIL)return false;
+ const senderName=env.BREVO_SENDER_NAME||"UnPredictMe";
+ const htmlEmail='<!doctype html><html><body style="margin:0;background:#effdfa;font-family:Arial,sans-serif;color:#123;"><div style="max-width:620px;margin:0 auto;padding:40px 20px;"><div style="background:#fff;border-radius:28px;padding:36px;"><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#168d82;">UnPredictMe</div><h1>'+escapeHtml(p.title)+'</h1><p style="font-size:19px;line-height:1.65;color:#42635f;">'+escapeHtml(p.text)+'</p><p style="color:#168d82;font-weight:700;">Come back tomorrow. I’ll make another prediction.</p></div></div></body></html>';
+ const r=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},body:JSON.stringify({sender:{email:env.BREVO_SENDER_EMAIL,name:senderName},to:[{email}],subject:"Your UnPredictMe prediction ✨",htmlContent:htmlEmail})});
+ return r.ok;
+}
+const questions=[
+["It’s Saturday morning. Your ideal start is…",[["slow","A slow start. Coffee, no rush."],["out","Already out doing something."],["productive","Knock something off the list."],["random","See what happens."]]],
+["In a group, you usually…",[["observe","Watch the room first."],["connect","Find one person to talk to."],["lead","Get everyone moving."],["surprise","Do something nobody expected."]]],
+["A tempting opportunity appears with almost no warning. You…",[["yes","Say yes, then figure it out."],["think","Ask for a little time."],["research","Need the details first."],["instinct","Trust your gut."]]],
+["Your plans suddenly change. Your first reaction is…",[["adapt","Fine. What’s the new plan?"],["annoyed","Wait, we had a plan."],["relieved","Honestly? Kind of a relief."],["excited","Interesting. Let’s see."]]],
+["What do you want us to predict?",[["love","Love & relationships"],["career","Career & ambition"],["money","Money & opportunity"],["next","What happens next"]]]
+];
+const html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>UnPredictMe — Let’s see if we can figure you out.</title><meta name="description" content="A playful AI prediction about you. Answer a few questions, see if we get you, and come back tomorrow for another prediction."><meta name="robots" content="index,follow"><style>
+:root{--ink:#123a36;--muted:#58716d;--aqua:#78e6d5;--cream:#f7fffd;--line:#b9ebe3}*{box-sizing:border-box}html{min-height:100%;background:var(--cream)}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);overflow-x:hidden}body:before,body:after{content:"";position:fixed;width:42vw;height:42vw;border-radius:50%;filter:blur(55px);opacity:.48;z-index:-2;animation:float 12s ease-in-out infinite alternate}body:before{background:#9af3e4;top:-13vw;left:-8vw}body:after{background:#c8e8ff;right:-12vw;bottom:-14vw;animation-delay:-5s}@keyframes float{to{transform:translate(30px,25px) scale(1.08)}}main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 18px}.shell{width:min(760px,100%);text-align:center}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#168d82}h1{font-size:clamp(58px,13vw,112px);line-height:.84;letter-spacing:-.075em;margin:16px 0 22px}.lede{font-size:clamp(19px,3vw,25px);line-height:1.35;color:var(--muted);max-width:590px;margin:0 auto 28px}.card{position:relative;overflow:hidden;text-align:left;background:rgba(255,255,255,.84);border:1px solid rgba(185,235,227,.95);border-radius:32px;padding:clamp(24px,5vw,46px);box-shadow:0 25px 80px rgba(26,104,95,.12);backdrop-filter:blur(16px)}.progress{height:7px;background:#e7f7f4;border-radius:99px;margin-bottom:30px;overflow:hidden}.bar{height:100%;background:var(--aqua);border-radius:99px;transition:width .35s ease}.qnum{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#4eaaa0}.question{font-size:clamp(26px,5vw,40px);line-height:1.08;letter-spacing:-.035em;margin:10px 0 24px}.answers{display:grid;gap:11px}.answer{width:100%;padding:17px 18px;border:1px solid var(--line);border-radius:17px;background:#fff;color:var(--ink);font-size:17px;font-weight:650;text-align:left;cursor:pointer;transition:.18s transform,.18s background,.18s box-shadow}.answer:hover,.answer:focus-visible{transform:translateY(-2px);background:#f0fffc;box-shadow:0 8px 24px rgba(30,120,110,.10);outline:none}.helper{font-size:13px;color:#78908d;text-align:center;margin:20px 0 0}.result{text-align:center}.result .prediction{text-align:left;background:#f1fffc;border:1px solid var(--line);border-radius:24px;padding:24px;margin:24px 0}.result h2{font-size:clamp(30px,6vw,46px);letter-spacing:-.04em;margin:10px 0}.result .prediction h3{font-size:23px;margin:0 0 10px}.result .prediction p{font-size:19px;line-height:1.6;color:#42635f;margin:0}.buttons{display:grid;gap:10px}.primary,.secondary{border:0;border-radius:16px;padding:17px;font-size:16px;font-weight:800;cursor:pointer}.primary{background:var(--ink);color:#fff}.secondary{background:#e5f7f3;color:var(--ink)}.email{display:flex;gap:10px;margin-top:22px}.email input{min-width:0;flex:1;border:1px solid var(--line);border-radius:15px;padding:16px;font-size:16px;background:#fff}.email button{border:0;border-radius:15px;padding:0 20px;background:var(--ink);color:#fff;font-weight:800;cursor:pointer}.consent{display:flex;gap:9px;align-items:flex-start;text-align:left;font-size:12px;color:#718783;margin:12px 2px 0}.consent input{margin-top:2px}.status{min-height:20px;color:#b04b3c;font-size:13px;margin-top:10px}.daily{margin-top:16px;font-size:14px;color:#58716d}.daily strong{color:var(--ink)}@media(max-width:520px){main{padding:18px 14px}.card{border-radius:25px}.email{display:grid}.email button{padding:16px}.question{font-size:29px}}
+</style></head><body><main><div class="shell"><div class="eyebrow">A daily guessing game</div><h1>UnPredictMe</h1><p class="lede"><strong>Predicting you is figuring you out.</strong><br>Answer a few things. We’ll make a call. Then come back tomorrow and see what else we notice.</p><section class="card" id="app"></section><p class="daily">No birth chart. No homework. Just <strong>one new prediction at a time.</strong></p></div></main><script>
+let step=0,answers=[];const app=document.getElementById("app");
+function renderQuestion(){const q=questions[step];app.innerHTML='<div class="progress"><div class="bar" style="width:'+(((step+1)/questions.length)*100)+'%"></div></div><div class="qnum">Question '+(step+1)+' of '+questions.length+'</div><div class="question">'+q[0]+'</div><div class="answers">'+q[1].map(x=>'<button class="answer" data-value="'+x[0]+'">'+x[1]+'</button>').join("")+'</div><div class="helper">There’s no right answer. Go with your first instinct.</div>';app.querySelectorAll(".answer").forEach(b=>b.onclick=()=>{answers.push(b.dataset.value);step++;step<questions.length?renderQuestion():renderEmail()})}
+function renderEmail(){app.innerHTML='<div class="qnum">One last thing</div><div class="question">Where should we send your first prediction?</div><p style="color:var(--muted);line-height:1.55">We’ll show you the prediction here too. Your email lets us send it to you and gives you a way to come back for future predictions.</p><form id="emailForm"><div class="email"><input id="email" type="email" autocomplete="email" placeholder="you@example.com" required><button>Make my prediction</button></div><label class="consent"><input id="marketing" type="checkbox"> <span>Yes, send me occasional UnPredictMe predictions and product updates. (Optional.)</span></label><div class="status" id="status" aria-live="polite"></div></form>';document.getElementById("emailForm").onsubmit=submit;document.getElementById("email").focus()}
+async function submit(e){e.preventDefault();const status=document.getElementById("status"),button=e.target.querySelector("button");button.disabled=true;button.textContent="Making your prediction…";status.textContent="";const email=document.getElementById("email").value.trim();try{const r=await fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,answers:answers,marketing:document.getElementById("marketing").checked})});const data=await r.json();if(!r.ok)throw new Error(data.error||"Something went wrong.");showResult(data.prediction)}catch(err){status.textContent=err.message;button.disabled=false;button.textContent="Make my prediction"}}
+function showResult(p){app.innerHTML='<div class="result"><div class="eyebrow">Our prediction</div><h2>Okay. We have a guess.</h2><div class="prediction"><h3>'+p.title+'</h3><p>'+p.text+'</p></div><div class="buttons"><button class="primary" id="got">That’s me. 👀</button><button class="secondary" id="miss">Not even close.</button></div><p class="helper">Either way, come back tomorrow. We’ll make another prediction.</p></div>';document.getElementById("got").onclick=()=>feedback(true);document.getElementById("miss").onclick=()=>feedback(false)}
+function feedback(got){app.querySelectorAll("button").forEach(b=>b.disabled=true);app.querySelector(".helper").textContent=got?"We’ll keep that one in mind. See you tomorrow.":"Fair. Tomorrow we’ll try again."}
+renderQuestion();
+</script></body></html>';
+export default {async fetch(request,env){
+ const url=new URL(request.url);
+ if(request.method==="POST"&&url.pathname==="/api/signup"){
+  try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),answers=Array.isArray(body.answers)?body.answers.slice(0,5).map(String):[];
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
+   const prediction=makePrediction(email,answers);try{await sendBrevo(env,email,prediction)}catch(_){}
+   return Response.json({prediction});
+  }catch(_){return Response.json({error:"We couldn’t make that prediction. Try again."},{status:400})}
+ }
+ return new Response(html,{headers:{"content-type":"text/html;charset=UTF-8","cache-control":"public, max-age=60"}});
 }};
