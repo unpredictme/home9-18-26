@@ -117,14 +117,14 @@ export default {async fetch(request,env){
  const url=new URL(request.url);
  if(request.method==="POST"&&url.pathname==="/api/signup"){
   try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),answers=Array.isArray(body.answers)?body.answers.slice(0,5).map(String):[];
-   if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
    const prediction=makePrediction(email,answers);
    return Response.json({prediction});
   }catch(_){return Response.json({error:"We couldn’t make that prediction. Try again."},{status:400})}
  }
  if(request.method==="POST"&&url.pathname==="/api/send"){
   try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),firstName=String(body.firstName||"").trim().slice(0,60),prediction=body.prediction||{};
-   if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
+   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
    if(!firstName)return Response.json({error:"Please enter your first name."},{status:400});
    const emailResult=await sendBrevo(env,email,prediction,firstName);
    if(!emailResult.ok)return Response.json({error:"Prediction created, but email delivery failed.",emailSent:false,emailError:emailResult.error,emailStatus:emailResult.status||null},{status:502});
