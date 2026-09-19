@@ -140,6 +140,14 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
 </script></body></html>`;
 export default {async fetch(request,env){
  const url=new URL(request.url);
+ const icon32='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#08070b"/><circle cx="16" cy="16" r="10" fill="#d9c8ff"/><path d="M12.8 12.7c.25-2.25 1.65-3.7 3.7-3.7 2.35 0 3.8 1.55 3.8 3.55 0 1.85-1.05 2.8-2.55 3.75-1.1.7-1.45 1.25-1.45 2.3h-2.25c0-1.95.7-3 2.15-4.05 1.2-.85 1.75-1.3 1.75-2.2 0-.85-.55-1.45-1.45-1.45-.95 0-1.55.7-1.65 1.8zM14.2 21h3.5v3.2h-3.5z" fill="#08070b"/></svg>';
+ const icon16='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" rx="4" fill="#08070b"/><circle cx="8" cy="8" r="5.5" fill="#d9c8ff"/><path d="M6.4 6.3c.1-1.15.75-1.9 1.7-1.9 1.1 0 1.8.75 1.8 1.7 0 .9-.5 1.35-1.2 1.8-.55.35-.7.65-.7 1.15H6.9c0-.95.35-1.45 1.05-1.95.55-.4.8-.6.8-1.05 0-.4-.25-.7-.7-.7-.45 0-.75.35-.8.95zM7.1 10.5h1.8v1.6H7.1z" fill="#08070b"/></svg>';
+ const icon180='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180"><rect width="180" height="180" rx="42" fill="#08070b"/><circle cx="90" cy="90" r="61" fill="#d9c8ff"/><path d="M67 72c1.7-13.7 10.7-22.4 24-22.4 15.2 0 24.6 10 24.6 22.9 0 11.9-6.8 18-16.5 24.2-7.1 4.5-9.4 8-9.4 14.8H75.2c0-12.6 4.5-19.4 13.9-26.1 7.8-5.5 11.3-8.4 11.3-14.2 0-5.5-3.6-9.4-9.4-9.4-6.1 0-10 4.5-10.7 11.6zM76 125h28v25H76z" fill="#08070b"/></svg>';
+ if(request.method==="GET"&&(url.pathname==="/favicon.svg"||url.pathname==="/favicon-32.svg"||url.pathname==="/favicon-16.svg"||url.pathname==="/apple-touch-icon.svg")){
+   const body=url.pathname.includes("apple")?icon180:(url.pathname.includes("16")?icon16:icon32);
+   return new Response(body,{headers:{"content-type":"image/svg+xml","cache-control":"public,max-age=31536000,immutable"}});
+ }
+ if(request.method==="GET"&&url.pathname==="/site.webmanifest")return new Response(JSON.stringify({name:"UnPredictMe",short_name:"UnPredictMe",start_url:"/",display:"standalone",background_color:"#f7f4ff",theme_color:"#08070b",icons:[{src:"/favicon-32.svg",sizes:"32x32",type:"image/svg+xml"},{src:"/apple-touch-icon.svg",sizes:"180x180",type:"image/svg+xml"}]}),{headers:{"content-type":"application/manifest+json","cache-control":"public,max-age=86400"}});
  if(request.method==="GET"&&url.pathname==="/robots.txt")return new Response(`User-agent: *
 Allow: /
 
