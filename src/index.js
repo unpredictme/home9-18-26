@@ -6,6 +6,14 @@ const predictions=[
 ["The Connector","Your email has a social, conversational rhythm. A useful introduction, message, or unexpected conversation may be closer than you think."],
 ["The Wildcard","Your address gives us just enough signal to make a dangerous little guess: you do not always follow your own pattern when something really matters."]
 ];
+function hash(value){
+ let h=2166136261;
+ for(let i=0;i<value.length;i++){
+  h^=value.charCodeAt(i);
+  h=Math.imul(h,16777619);
+ }
+ return h>>>0;
+}
 function emailSignals(email){
  const local=email.split("@")[0]||"";
  const domain=(email.split("@")[1]||"").toLowerCase();
