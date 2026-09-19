@@ -2,3 +2,10 @@ name = "home9-18-26"
 main = "src/index.js"
 compatibility_date = "2026-09-17"
 workers_dev = true
+
+[vars]
+BREVO_SENDER_EMAIL = "invite@unpredictme.com"
+BREVO_SENDER_NAME = "Jen @UnPredictMe"
+
+[secrets]
+required = ["BREVO_API_KEY"]
