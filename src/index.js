@@ -10,11 +10,13 @@ function hash(input){let n=2166136261;for(const c of input)n=Math.imul(n^c.charC
 function makePrediction(email,answers,date=new Date().toISOString().slice(0,10)){const s=[email.toLowerCase().trim(),date,...answers].join("|");const p=predictions[hash(s)%predictions.length];return {title:p[0],text:p[1]}}
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 async function sendBrevo(env,email,p){
- if(!env.BREVO_API_KEY||!env.BREVO_SENDER_EMAIL)return false;
+ if(!env.BREVO_API_KEY||!env.BREVO_SENDER_EMAIL)return {ok:false,error:"Brevo is not configured on this Worker."};
  const senderName=env.BREVO_SENDER_NAME||"UnPredictMe";
  const htmlEmail='<!doctype html><html><body style="margin:0;background:#effdfa;font-family:Arial,sans-serif;color:#123;"><div style="max-width:620px;margin:0 auto;padding:40px 20px;"><div style="background:#fff;border-radius:28px;padding:36px;"><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#168d82;">UnPredictMe</div><h1>'+escapeHtml(p.title)+'</h1><p style="font-size:19px;line-height:1.65;color:#42635f;">'+escapeHtml(p.text)+'</p><p style="color:#168d82;font-weight:700;">Come back tomorrow. I’ll make another prediction.</p></div></div></body></html>';
- const r=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},body:JSON.stringify({sender:{email:env.BREVO_SENDER_EMAIL,name:senderName},to:[{email}],subject:"Your UnPredictMe prediction ✨",htmlContent:htmlEmail})});
- return r.ok;
+ const r=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},body:JSON.stringify({sender:{email:env.BREVO_SENDER_EMAIL,name:senderName},to:[{email}],subject:"Your UnPredictMe prediction ✨",htmlContent:htmlEmail,textContent:p.title+"\n\n"+p.text+"\n\nCome back tomorrow. I’ll make another prediction."})});
+ const data=await r.json().catch(()=>({}));
+ if(!r.ok)return {ok:false,status:r.status,error:String(data.message||data.code||"Brevo rejected the email.")};
+ return {ok:true,messageId:data.messageId||null};
 }
 const questions=[
 ["It’s Saturday morning. Your ideal start is…",[["slow","A slow start. Coffee, no rush."],["out","Already out doing something."],["productive","Knock something off the list."],["random","See what happens."]]],
@@ -69,8 +71,11 @@ export default {async fetch(request,env){
  if(request.method==="POST"&&url.pathname==="/api/signup"){
   try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),answers=Array.isArray(body.answers)?body.answers.slice(0,5).map(String):[];
    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
-   const prediction=makePrediction(email,answers);try{await sendBrevo(env,email,prediction)}catch(_){}
-   return Response.json({prediction});
+   const prediction=makePrediction(email,answers);
+   let emailResult;
+   try{emailResult=await sendBrevo(env,email,prediction)}catch(err){emailResult={ok:false,error:"Email service error."}}
+   if(!emailResult.ok)return Response.json({error:"We made your prediction, but couldn't send the email yet.",prediction,emailSent:false,detail:emailResult.error},{status:502});
+   return Response.json({prediction,emailSent:true});
   }catch(_){return Response.json({error:"We couldn’t make that prediction. Try again."},{status:400})}
  }
  return new Response(html,{headers:{"content-type":"text/html;charset=UTF-8","cache-control":"no-store"}});
