@@ -21,15 +21,24 @@ function emailSignals(email){
  const letters=(local.match(/[a-z]/gi)||[]).length;
  const digits=(local.match(/\d/g)||[]).length;
  const separators=(local.match(/[._+-]/g)||[]).length;
- const hasNameLike=/^[a-z]+[._-][a-z]+$/i.test(local)||/^[a-z]+[a-z]+$/i.test(local);
- const long=local.length>=11;
  const vowelCount=(local.match(/[aeiou]/gi)||[]).length;
  const vowelRatio=letters?vowelCount/letters:0;
- const obviousTest=/^(test|fake|asdf|qwerty|abc|abcd|example|random|noreply|nope|hello|temp|temporary|throwaway|junk|spam)/i.test(local);
- const gibberish=letters>=11&&vowelRatio<0.23&&!hasNameLike;
- const testLike=obviousTest||gibberish;
+ const lower=local.toLowerCase();
+ let maxConsonantRun=0,run=0;
+ for(const ch of lower){
+   if(/[a-z]/.test(ch)&&!/[aeiou]/.test(ch)){run++;if(run>maxConsonantRun)maxConsonantRun=run}else run=0;
+ }
+ const uniqueLetters=new Set((lower.match(/[a-z]/g)||[])).size;
+ const letterDiversity=letters?uniqueLetters/letters:0;
+ const obviousTest=/^(test|testing|fake|asdf|qwerty|abc|abcd|example|random|noreply|nope|hello|temp|temporary|throwaway|junk|spam|foobar|lorem)/i.test(local);
+ const hasNameLike=separators>0
+   ? /^[a-z]{2,}[._-][a-z]{2,}$/i.test(local)
+   : letters>=3&&vowelRatio>=0.22&&maxConsonantRun<=4;
+ const long=local.length>=11;
+ const syntheticScore=(letters>=10&&vowelRatio<0.22?2:0)+(maxConsonantRun>=5?2:0)+(letters>=12&&letterDiversity>0.72?1:0)+(separators===0&&digits===0&&letters>=14?1:0);
+ const testLike=obviousTest||syntheticScore>=3;
  const score=(compact.length*3+letters*2+digits*7+separators*11+(hasNameLike?13:0)+(domain.length%9));
- return {local,domain,length:local.length,digits,separators,hasNameLike,long,score,testLike};
+ return {local,domain,length:local.length,digits,separators,hasNameLike,long,vowelRatio,maxConsonantRun,letterDiversity,score,testLike};
 }
 function makePrediction(email,answers,date=new Date().toISOString().slice(0,10)){
  const s=emailSignals(email);
@@ -37,9 +46,9 @@ function makePrediction(email,answers,date=new Date().toISOString().slice(0,10))
  const p=predictions[hash(seed)%predictions.length];
  if(s.testLike){
    return {
-     title:"Nice try.",
-     text:"That email looks suspiciously like a test string. We’re not going to pretend it tells us who you are.",
-     signal:"You may be testing UnPredictMe. We noticed a random-looking email handle — so this time, we’re calling it."
+     title:"The Tester",
+     text:"Okay, you’re testing us. That email looks intentionally random, so UPME isn’t going to invent a personality story just to sound clever.",
+     signal:"Random-looking handle detected. We’d rather call it than fake a prediction."
    };
  }
  const traits=[];
@@ -95,7 +104,7 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
     var lines=["Looking at the shape of it…","Finding a pattern worth following…","Making one slightly reckless guess…"];
     var i=0;
     var timer=setInterval(function(){i++;var el=document.getElementById("readingLine");if(el&&i<lines.length)el.textContent=lines[i];},650);
-    fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,answers:[],marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The prediction service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){clearInterval(timer);if(d.prediction){prediction=d.prediction;track("prediction_generated");result();return}throw new Error(d.error||"Something went wrong.")}).catch(function(err){clearInterval(timer);app.innerHTML='<div class="eyebrow">TINY GLITCH</div><h1>We hit a snag.</h1><section class="card"><div class="question">The machine could not make the prediction.</div><p class="helper">'+esc(err.detail||err.message)+'</p><div style="text-align:center;margin-top:20px"><button class="primary" id="retry">Try again</button></div></section>';document.getElementById("retry").onclick=start});
+    fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,answers:[],marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The prediction service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){clearInterval(timer);if(d.prediction){prediction=d.prediction;track("prediction_generated");if(d.prediction.testLike)track("prediction_test_detected");result();return}throw new Error(d.error||"Something went wrong.")}).catch(function(err){clearInterval(timer);app.innerHTML='<div class="eyebrow">TINY GLITCH</div><h1>We hit a snag.</h1><section class="card"><div class="question">The machine could not make the prediction.</div><p class="helper">'+esc(err.detail||err.message)+'</p><div style="text-align:center;margin-top:20px"><button class="primary" id="retry">Try again</button></div></section>';document.getElementById("retry").onclick=start});
   }
   function result(){
     var signal=prediction.signal||"We noticed a few tiny patterns in the address.";
@@ -178,7 +187,7 @@ https://unpredictme.com/
   try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),answers=Array.isArray(body.answers)?body.answers.slice(0,5).map(String):[];
    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
    const prediction=makePrediction(email,answers);
-   return Response.json({prediction});
+   return Response.json({prediction,testLike:!!prediction.testLike});
   }catch(_){return Response.json({error:"We couldn’t make that prediction. Try again."},{status:400})}
  }
  if(request.method==="POST"&&url.pathname==="/api/send"){
