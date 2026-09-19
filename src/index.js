@@ -41,11 +41,11 @@ function makePrediction(email,answers,date=new Date().toISOString().slice(0,10))
  return {title:p[0],text:p[1],signal:prefix+"We noticed "+signal+". This is a playful guess from the shape of your email — not a claim that we can actually know you from it."};
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-async function sendBrevo(env,email,p){
+async function sendBrevo(env,email,p,firstName=""){
  if(!env.BREVO_API_KEY||!env.BREVO_SENDER_EMAIL)return {ok:false,error:"Brevo is not configured on this Worker."};
  const senderName=env.BREVO_SENDER_NAME||"UnPredictMe";
- const htmlEmail='<!doctype html><html><body style="margin:0;background:#effdfa;font-family:Arial,sans-serif;color:#123;"><div style="max-width:620px;margin:0 auto;padding:40px 20px;"><div style="background:#fff;border-radius:28px;padding:36px;"><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#168d82;">UnPredictMe</div><h1>'+escapeHtml(p.title)+'</h1><p style="font-size:19px;line-height:1.65;color:#42635f;">'+escapeHtml(p.text)+'</p><p style="color:#168d82;font-weight:700;">Come back tomorrow. I’ll make another prediction.</p></div></div></body></html>';
- const r=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},body:JSON.stringify({sender:{email:env.BREVO_SENDER_EMAIL,name:senderName},to:[{email}],subject:"Your UnPredictMe prediction ✨",htmlContent:htmlEmail,textContent:p.title+"\n\n"+p.text+"\n\nCome back tomorrow. I’ll make another prediction."})});
+ const htmlEmail='<!doctype html><html><body style="margin:0;background:#effdfa;font-family:Arial,sans-serif;color:#123;"><div style="max-width:620px;margin:0 auto;padding:40px 20px;"><div style="background:#fff;border-radius:28px;padding:36px;"><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#168d82;">UnPredictMe</div><p style="font-size:18px;color:#42635f;">Hi `+escapeHtml(firstName)+`,</p><h1>'+escapeHtml(p.title)+'</h1><p style="font-size:19px;line-height:1.65;color:#42635f;">'+escapeHtml(p.text)+'</p><p style="color:#168d82;font-weight:700;">Come back tomorrow. I’ll make another prediction.</p></div></div></body></html>';
+ const r=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},body:JSON.stringify({sender:{email:env.BREVO_SENDER_EMAIL,name:senderName},to:[{email,name:firstName}],replyTo:{email:env.BREVO_SENDER_EMAIL,name:senderName},subject:"Your UnPredictMe prediction ✨",htmlContent:htmlEmail,textContent:"Hi "+firstName+",\n\n"+p.title+"\n\n"+p.text+"\n\nCome back tomorrow. I’ll make another prediction."})});
  const data=await r.json().catch(()=>({}));
  if(!r.ok)return {ok:false,status:r.status,error:String(data.message||data.code||"Brevo rejected the email.")};
  return {ok:true,messageId:data.messageId||null};
@@ -83,13 +83,22 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
     var lines=["Looking at the shape of it…","Finding a pattern worth following…","Making one slightly reckless guess…"];
     var i=0;
     var timer=setInterval(function(){i++;var el=document.getElementById("readingLine");if(el&&i<lines.length)el.textContent=lines[i];},650);
-    fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,answers:[],marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The prediction service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){clearInterval(timer);if(d.prediction){prediction=d.prediction;prediction.emailSent=d.emailSent!==false;prediction.emailError=d.emailError||d.detail||"";prediction.emailStatus=d.emailStatus||d._httpStatus||null;result();return}throw new Error(d.error||"Something went wrong.")}).catch(function(err){clearInterval(timer);app.innerHTML='<div class="eyebrow">TINY GLITCH</div><h1>We hit a snag.</h1><section class="card"><div class="question">The machine made the guess, but the email step failed.</div><p class="helper">'+esc(err.detail||err.message)+'</p><div style="text-align:center;margin-top:20px"><button class="primary" id="retry">Try again</button></div></section>';document.getElementById("retry").onclick=start});
+    fetch("/api/signup",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,answers:[],marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The prediction service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){clearInterval(timer);if(d.prediction){prediction=d.prediction;result();return}throw new Error(d.error||"Something went wrong.")}).catch(function(err){clearInterval(timer);app.innerHTML='<div class="eyebrow">TINY GLITCH</div><h1>We hit a snag.</h1><section class="card"><div class="question">The machine could not make the prediction.</div><p class="helper">'+esc(err.detail||err.message)+'</p><div style="text-align:center;margin-top:20px"><button class="primary" id="retry">Try again</button></div></section>';document.getElementById("retry").onclick=start});
   }
   function result(){
     var signal=prediction.signal||"We noticed a few tiny patterns in the address.";
-    app.innerHTML='<div class="eyebrow">THE MACHINE HAS SPOKEN</div><h1 class="reveal">Okay. We have a guess.</h1><section class="card reveal"><div class="prediction"><div class="prediction-mark">✦</div><h3>'+esc(prediction.title)+'</h3><p>'+esc(prediction.text)+'</p></div><div class="signal-bar"><span class="signal-chip">'+esc(signal)+'</span></div><p class="helper">This is a playful read of the email address — not a real personality test. The fun is seeing whether the guess feels oddly close.</p><div class="buttons"><button class="primary" id="yes">That’s me. 👀</button><button class="secondary" id="no">Not even close.</button></div><p class="helper" id="deliveryNote">We emailed your prediction too. Come back tomorrow and give the machine another clue.</p></section>';
-    document.getElementById("yes").onclick=function(){app.insertAdjacentHTML("beforeend",'<p class="feedback">We’ll take that. The machine may be onto something.</p>')};
-    document.getElementById("no").onclick=function(){app.insertAdjacentHTML("beforeend",'<p class="feedback">Fair. The machine is keeping its secrets.</p>')};var note=document.getElementById("deliveryNote");if(note&&!prediction.emailSent){note.innerHTML="<strong>Prediction ready.</strong> The email could not be sent yet"+(prediction.emailStatus?" (Brevo status "+esc(prediction.emailStatus)+")":"")+(prediction.emailError?" — "+esc(prediction.emailError):"")+".";}
+    app.innerHTML='<div class="eyebrow">THE MACHINE HAS SPOKEN</div><h1 class="reveal">Okay. We have a guess.</h1><section class="card reveal"><div class="prediction"><div class="prediction-mark">✦</div><h3>'+esc(prediction.title)+'</h3><p>'+esc(prediction.text)+'</p></div><div class="signal-bar"><span class="signal-chip">'+esc(signal)+'</span></div><p class="helper">This is a playful read of the email address — not a real personality test. The fun is seeing whether the guess feels oddly close.</p><div class="buttons"><button class="primary" id="yes">That’s me. 👀</button><button class="secondary" id="no">Not even close.</button></div><div id="feedbackArea"></div><div class="name-step" style="margin-top:28px;padding-top:24px;border-top:1px solid #d8f1ec"><div class="qnum">ONE LAST CLUE</div><div class="question" style="font-size:30px">What’s your first name?</div><p class="intro" style="margin-bottom:12px">We’ll use it to make your prediction feel a little more personal.</p><form id="nameForm"><div class="email"><input id="firstName" type="text" placeholder="Your first name" autocomplete="given-name" maxlength="60" required><button class="primary" type="submit">UnPredict Me?</button></div></form><p class="helper" id="deliveryNote">Your prediction is ready. Enter your first name to send it to <strong>'+esc(email)+'</strong>.</p></div></section>';
+    document.getElementById("yes").onclick=function(){document.getElementById("feedbackArea").innerHTML='<p class="feedback">We’ll take that. The machine may be onto something.</p>';};
+    document.getElementById("no").onclick=function(){document.getElementById("feedbackArea").innerHTML='<p class="feedback">Fair. The machine is keeping its secrets.</p>';};
+    document.getElementById("nameForm").onsubmit=function(ev){ev.preventDefault();var input=document.getElementById("firstName");if(!input.checkValidity()){input.reportValidity();return}sendPrediction(input.value.trim());};
+  }
+  function sendPrediction(firstName){
+    var note=document.getElementById("deliveryNote");
+    var form=document.getElementById("nameForm");
+    var button=form.querySelector("button");
+    button.disabled=true;
+    button.textContent="Sending…";
+    fetch("/api/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,firstName:firstName,prediction:prediction,marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The email service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){if(!d.emailSent)throw new Error(d.emailError||d.error||"The email could not be sent.");button.textContent="Sent ✓";note.innerHTML="<strong>Prediction sent.</strong> Check your inbox for your UnPredictMe prediction.";}).catch(function(err){button.disabled=false;button.textContent="UnPredict Me?";note.innerHTML="<strong>Prediction ready.</strong> We couldn’t send the email yet — "+esc(err.message)+".";});
   }
   function page(title,body){app.innerHTML='<section class="card page"><div class="eyebrow">'+esc(title.toUpperCase())+'</div><h2>'+esc(title)+'</h2>'+body+'</section>'}
   function route(){
@@ -108,13 +117,19 @@ export default {async fetch(request,env){
  const url=new URL(request.url);
  if(request.method==="POST"&&url.pathname==="/api/signup"){
   try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),answers=Array.isArray(body.answers)?body.answers.slice(0,5).map(String):[];
-   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
+   if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
    const prediction=makePrediction(email,answers);
-   let emailResult;
-   try{emailResult=await sendBrevo(env,email,prediction)}catch(err){emailResult={ok:false,error:"Email service error."}}
-   if(!emailResult.ok)return Response.json({error:"Prediction created, but email delivery failed.",prediction,emailSent:false,emailError:emailResult.error,emailStatus:emailResult.status||null},{status:502});
-   return Response.json({prediction,emailSent:true});
+   return Response.json({prediction});
   }catch(_){return Response.json({error:"We couldn’t make that prediction. Try again."},{status:400})}
+ }
+ if(request.method==="POST"&&url.pathname==="/api/send"){
+  try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),firstName=String(body.firstName||"").trim().slice(0,60),prediction=body.prediction||{};
+   if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
+   if(!firstName)return Response.json({error:"Please enter your first name."},{status:400});
+   const emailResult=await sendBrevo(env,email,prediction,firstName);
+   if(!emailResult.ok)return Response.json({error:"Prediction created, but email delivery failed.",emailSent:false,emailError:emailResult.error,emailStatus:emailResult.status||null},{status:502});
+   return Response.json({emailSent:true});
+  }catch(err){return Response.json({error:"Email service error.",emailSent:false,emailError:String(err&&err.message||"Unknown error")},{status:500})}
  }
  return new Response(html,{headers:{"content-type":"text/html;charset=UTF-8","cache-control":"no-store"}});
 }};
