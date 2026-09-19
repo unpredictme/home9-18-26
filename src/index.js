@@ -115,6 +115,53 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
 </script></body></html>`;
 export default {async fetch(request,env){
  const url=new URL(request.url);
+ if(request.method==="GET"&&url.pathname==="/robots.txt")return new Response(`User-agent: *
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+Sitemap: https://unpredictme.com/sitemap.xml
+`,{headers:{"content-type":"text/plain;charset=UTF-8","cache-control":"public,max-age=86400"}});
+ if(request.method==="GET"&&url.pathname==="/sitemap.xml")return new Response(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://unpredictme.com/</loc></url>
+  <url><loc>https://unpredictme.com/about</loc></url>
+  <url><loc>https://unpredictme.com/pricing</loc></url>
+  <url><loc>https://unpredictme.com/contact</loc></url>
+  <url><loc>https://unpredictme.com/privacy</loc></url>
+  <url><loc>https://unpredictme.com/terms</loc></url>
+</urlset>
+`,{headers:{"content-type":"application/xml;charset=UTF-8","cache-control":"public,max-age=86400"}});
+ if(request.method==="GET"&&url.pathname==="/llms.txt")return new Response(`# UnPredictMe
+
+> UnPredictMe is a playful prediction experience that makes unpredictable guesses about you from tiny visible patterns in an email address.
+
+## What it is
+
+UnPredictMe is an entertainment product. A visitor enters an email address, receives a playful prediction, can say whether the prediction feels accurate, and can optionally provide a first name to have the prediction emailed to them.
+
+## What makes it different
+
+The experience is intentionally simple and unpredictable: one email address, one surprising guess, and a reason to come back for another prediction.
+
+UnPredictMe does not claim that an email address reveals a person's real personality, identity, or future.
+
+## Primary website
+
+https://unpredictme.com/
+
+## Key pages
+
+- https://unpredictme.com/about — what UnPredictMe is and how it works
+- https://unpredictme.com/pricing — current launch pricing
+- https://unpredictme.com/contact — contact information
+- https://unpredictme.com/privacy — privacy policy
+- https://unpredictme.com/terms — terms of service
+`,{headers:{"content-type":"text/plain;charset=UTF-8","cache-control":"public,max-age=86400"}});
  if(request.method==="POST"&&url.pathname==="/api/signup"){
   try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),answers=Array.isArray(body.answers)?body.answers.slice(0,5).map(String):[];
    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
