@@ -1,0 +1,25 @@
+# UnPredictMe
+
+> UnPredictMe is a playful prediction experience that makes unpredictable guesses about you from tiny visible patterns in an email address.
+
+## What it is
+
+UnPredictMe is an entertainment product. A visitor enters an email address, receives a playful prediction, can say whether the prediction feels accurate, and can optionally provide a first name to have the prediction emailed to them.
+
+## What makes it different
+
+The experience is intentionally simple and unpredictable: one email address, one surprising guess, and a reason to come back for another prediction.
+
+UnPredictMe does not claim that an email address reveals a person's real personality, identity, or future.
+
+## Primary website
+
+https://unpredictme.com/
+
+## Key pages
+
+- https://unpredictme.com/about — what UnPredictMe is and how it works
+- https://unpredictme.com/pricing — current launch pricing
+- https://unpredictme.com/contact — contact information
+- https://unpredictme.com/privacy — privacy policy
+- https://unpredictme.com/terms — terms of service
