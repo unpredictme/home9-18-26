@@ -23,13 +23,25 @@ function emailSignals(email){
  const separators=(local.match(/[._+-]/g)||[]).length;
  const hasNameLike=/^[a-z]+[._-][a-z]+$/i.test(local)||/^[a-z]+[a-z]+$/i.test(local);
  const long=local.length>=11;
+ const vowelCount=(local.match(/[aeiou]/gi)||[]).length;
+ const vowelRatio=letters?vowelCount/letters:0;
+ const obviousTest=/^(test|fake|asdf|qwerty|abc|abcd|example|random|noreply|nope|hello|temp|temporary|throwaway|junk|spam)/i.test(local);
+ const gibberish=letters>=11&&vowelRatio<0.23&&!hasNameLike;
+ const testLike=obviousTest||gibberish;
  const score=(compact.length*3+letters*2+digits*7+separators*11+(hasNameLike?13:0)+(domain.length%9));
- return {local,domain,length:local.length,digits,separators,hasNameLike,long,score};
+ return {local,domain,length:local.length,digits,separators,hasNameLike,long,score,testLike};
 }
 function makePrediction(email,answers,date=new Date().toISOString().slice(0,10)){
  const s=emailSignals(email);
  const seed=[email.toLowerCase().trim(),date,...answers].join("|");
  const p=predictions[hash(seed)%predictions.length];
+ if(s.testLike){
+   return {
+     title:"Nice try.",
+     text:"That email looks suspiciously like a test string. We’re not going to pretend it tells us who you are.",
+     signal:"You may be testing UnPredictMe. We noticed a random-looking email handle — so this time, we’re calling it."
+   };
+ }
  const traits=[];
  if(s.hasNameLike)traits.push("name-like");
  if(s.separators)traits.push("has a little punctuation");
