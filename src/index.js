@@ -47,7 +47,7 @@ function makePrediction(email,answers,date=new Date().toISOString().slice(0,10))
  if(s.testLike){
    return {
      title:"The Tester",
-     text:"Okay, you’re testing us. That email looks intentionally random, so UPME isn’t going to invent a personality story just to sound clever.",
+     text:"Okay, you’re testing us. That email looks intentionally random, so The UnPredictMe Engine is not going to invent a personality story just to sound clever.",
      signal:"Random-looking handle detected. We’d rather call it than fake a prediction."
    };
  }
