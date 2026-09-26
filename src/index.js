@@ -66,7 +66,7 @@ async function sendBrevo(env,email,p,firstName=""){
  if(!env.BREVO_API_KEY||!env.BREVO_SENDER_EMAIL)return {ok:false,error:"Brevo is not configured on this Worker."};
  const senderName=env.BREVO_SENDER_NAME||"UnPredictMe";
  const htmlEmail='<!doctype html><html><body style="margin:0;background:#effdfa;font-family:Arial,sans-serif;color:#123;"><div style="max-width:620px;margin:0 auto;padding:40px 20px;"><div style="background:#fff;border-radius:28px;padding:36px;"><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#168d82;">UnPredictMe</div><p style="font-size:18px;color:#42635f;">Hi `+escapeHtml(firstName)+`,</p><h1>'+escapeHtml(p.title)+'</h1><p style="font-size:19px;line-height:1.65;color:#42635f;">'+escapeHtml(p.text)+'</p><p style="color:#168d82;font-weight:700;">Come back tomorrow. I’ll make another prediction.</p></div></div></body></html>';
- const r=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},body:JSON.stringify({sender:{email:env.BREVO_SENDER_EMAIL,name:senderName},to:[{email,name:firstName}],replyTo:{email:env.BREVO_SENDER_EMAIL,name:senderName},subject:"Your UnPredictMe prediction ✨",htmlContent:htmlEmail,textContent:"Hi "+firstName+",\n\n"+p.title+"\n\n"+p.text+"\n\nCome back tomorrow. I’ll make another prediction."})});
+ const r=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},body:JSON.stringify({sender:{email:env.BREVO_SENDER_EMAIL,name:senderName},to:[{email,name:firstName}],replyTo:{email:env.BREVO_SENDER_EMAIL,name:senderName},subject:"Your UnPredictMe prediction ✨",htmlContent:htmlEmail,tags:["unpredictme_prediction"]})});
  const data=await r.json().catch(()=>({}));
  if(!r.ok)return {ok:false,status:r.status,error:String(data.message||data.code||"Brevo rejected the email.")};
  return {ok:true,messageId:data.messageId||null};
@@ -123,7 +123,7 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
     var button=form.querySelector("button");
     button.disabled=true;
     button.textContent="Sending…";
-    fetch("/api/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,firstName:firstName,prediction:prediction,marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The email service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){if(!d.emailSent)throw new Error(d.emailError||d.error||"The email could not be sent.");button.textContent="Sent ✓";track("prediction_email_sent");note.innerHTML="<strong>Prediction sent.</strong> Check your inbox for your UnPredictMe prediction.";}).catch(function(err){button.disabled=false;button.textContent="UnPredict Me?";track("prediction_email_failed");note.innerHTML="<strong>Prediction ready.</strong> We couldn’t send the email yet — "+esc(err.message)+".";});
+    fetch("/api/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,firstName:firstName,prediction:prediction,marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The email service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){if(!d.emailSent)throw new Error(d.emailError||d.error||"The email could not be sent.");button.textContent="Sent ✓";track("prediction_email_sent");note.innerHTML="<strong>Prediction accepted.</strong> Brevo accepted your email request. Check your inbox and spam folder for your UnPredictMe prediction.";}).catch(function(err){button.disabled=false;button.textContent="UnPredict Me?";track("prediction_email_failed");note.innerHTML="<strong>Prediction ready.</strong> We couldn’t send the email yet — "+esc(err.message)+".";});
   }
   function page(title,body){app.innerHTML='<section class="card page"><div class="eyebrow">'+esc(title.toUpperCase())+'</div><h2>'+esc(title)+'</h2>'+body+'</section>'}
   function route(){
@@ -208,7 +208,7 @@ https://unpredictme.com/
    if(!firstName)return Response.json({error:"Please enter your first name."},{status:400});
    const emailResult=await sendBrevo(env,email,prediction,firstName);
    if(!emailResult.ok)return Response.json({error:"Prediction created, but email delivery failed.",emailSent:false,emailError:emailResult.error,emailStatus:emailResult.status||null},{status:502});
-   return Response.json({emailSent:true});
+   return Response.json({emailSent:true,messageId:emailResult.messageId||null});
   }catch(err){return Response.json({error:"Email service error.",emailSent:false,emailError:String(err&&err.message||"Unknown error")},{status:500})}
  }
  return new Response(html,{headers:{"content-type":"text/html;charset=UTF-8","cache-control":"no-store"}});
