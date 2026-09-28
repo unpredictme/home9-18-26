@@ -62,6 +62,24 @@ function makePrediction(email,answers,date=new Date().toISOString().slice(0,10))
  return {title:p[0],text:p[1],signal:prefix+"We noticed "+signal+". This is a playful guess from the shape of your email — not a claim that we can actually know you from it."};
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function addBrevoContact(env,email,firstName="",marketing=false){
+ if(!env.BREVO_API_KEY)return {ok:false,error:"Brevo is not configured on this Worker."};
+ const payload={
+  email,
+  attributes:{FNAME:firstName},
+  updateEnabled:true
+ };
+ const listId=Number(env.BREVO_CONTACT_LIST_ID||0);
+ if(marketing&&Number.isInteger(listId)&&listId>0)payload.listIds=[listId];
+ const r=await fetch("https://api.brevo.com/v3/contacts",{
+  method:"POST",
+  headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},
+  body:JSON.stringify(payload)
+ });
+ const data=await r.json().catch(()=>({}));
+ if(!r.ok)return {ok:false,status:r.status,error:String(data.message||data.code||"Brevo rejected the contact.")};
+ return {ok:true,contactId:data.id||null,marketingAdded:!!(marketing&&Number.isInteger(listId)&&listId>0)};
+}
 async function sendBrevo(env,email,p,firstName=""){
  if(!env.BREVO_API_KEY||!env.BREVO_SENDER_EMAIL)return {ok:false,error:"Brevo is not configured on this Worker."};
  const senderName=env.BREVO_SENDER_NAME||"UnPredictMe";
@@ -208,7 +226,15 @@ https://unpredictme.com/
    if(!firstName)return Response.json({error:"Please enter your first name."},{status:400});
    const emailResult=await sendBrevo(env,email,prediction,firstName);
    if(!emailResult.ok)return Response.json({error:"Prediction created, but email delivery failed.",emailSent:false,emailError:emailResult.error,emailStatus:emailResult.status||null},{status:502});
-   return Response.json({emailSent:true,messageId:emailResult.messageId||null});
+   const contactResult=await addBrevoContact(env,email,firstName,!!body.marketing);
+   return Response.json({
+    emailSent:true,
+    messageId:emailResult.messageId||null,
+    contactAdded:!!contactResult.ok,
+    contactId:contactResult.contactId||null,
+    marketingAdded:!!contactResult.marketingAdded,
+    contactError:contactResult.ok?null:contactResult.error
+   });
   }catch(err){return Response.json({error:"Email service error.",emailSent:false,emailError:String(err&&err.message||"Unknown error")},{status:500})}
  }
  return new Response(html,{headers:{"content-type":"text/html;charset=UTF-8","cache-control":"no-store"}});
