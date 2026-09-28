@@ -66,7 +66,7 @@ async function addBrevoContact(env,email,firstName="",marketing=false){
  if(!env.BREVO_API_KEY)return {ok:false,error:"Brevo is not configured on this Worker."};
  const payload={
   email,
-  attributes:{FNAME:firstName},
+  attributes:{FNAME:firstName,FIRSTNAME:firstName},
   updateEnabled:true
  };
  const listId=Number(env.BREVO_CONTACT_LIST_ID||0);
