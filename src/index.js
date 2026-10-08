@@ -74,32 +74,43 @@ function makePrediction(email,answers,date=new Date().toISOString().slice(0,10))
  };
 }
 function escapeHtml(v){return String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-async function addBrevoContact(env,email,firstName="",marketing=false){
- if(!env.BREVO_API_KEY)return {ok:false,error:"Brevo is not configured on this Worker."};
- const payload={
-  email,
-  attributes:{FNAME:firstName,FIRSTNAME:firstName},
-  updateEnabled:true
- };
- const listId=Number(env.BREVO_CONTACT_LIST_ID||0);
- if(marketing&&Number.isInteger(listId)&&listId>0)payload.listIds=[listId];
- const r=await fetch("https://api.brevo.com/v3/contacts",{
-  method:"POST",
-  headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},
-  body:JSON.stringify(payload)
- });
- const data=await r.json().catch(()=>({}));
- if(!r.ok)return {ok:false,status:r.status,error:String(data.message||data.code||"Brevo rejected the contact.")};
- return {ok:true,contactId:data.id||null,marketingAdded:!!(marketing&&Number.isInteger(listId)&&listId>0)};
+async function addBirdContact(env,email,firstName="",marketing=false){
+ if(!env.BIRD_API_KEY)return {ok:false,error:"Bird is not configured on this Worker."};
+ const base=env.BIRD_API_BASE_URL||"https://us1.platform.bird.com";
+ const headers={"accept":"application/json","content-type":"application/json","authorization":"Bearer "+env.BIRD_API_KEY};
+ let r=await fetch(base+"/v1/contacts",{method:"POST",headers,body:JSON.stringify({email,first_name:firstName})});
+ let data=await r.json().catch(()=>({}));
+ let contactId=data.id||null;
+ if(!r.ok&&r.status===409){
+   const lookup=await fetch(base+"/v1/contacts?email="+encodeURIComponent(email),{headers:{"accept":"application/json","authorization":"Bearer "+env.BIRD_API_KEY}});
+   const lookupData=await lookup.json().catch(()=>({}));
+   const match=Array.isArray(lookupData.data)?lookupData.data[0]:null;
+   contactId=match&&match.id?match.id:null;
+   if(contactId){
+     r=await fetch(base+"/v1/contacts/"+encodeURIComponent(contactId),{method:"PATCH",headers,body:JSON.stringify({first_name:firstName})});
+     data=await r.json().catch(()=>({}));
+   }
+ }
+ if(!r.ok)return {ok:false,status:r.status,error:String(data.message||data.type||data.code||"Bird rejected the contact.")};
+ let marketingAdded=false;
+ const audienceId=String(env.BIRD_AUDIENCE_ID||"").trim();
+ if(marketing&&audienceId&&contactId){
+   const ar=await fetch(base+"/v1/audiences/"+encodeURIComponent(audienceId)+"/contacts",{method:"POST",headers,body:JSON.stringify({contact_ids:[contactId]})});
+   const ad=await ar.json().catch(()=>({}));
+   if(!ar.ok)return {ok:true,contactId,marketingAdded:false,error:String(ad.message||ad.type||ad.code||"Bird accepted the contact but could not add the marketing audience.")};
+   marketingAdded=true;
+ }
+ return {ok:true,contactId,marketingAdded};
 }
-async function sendBrevo(env,email,p,firstName=""){
- if(!env.BREVO_API_KEY||!env.BREVO_SENDER_EMAIL)return {ok:false,error:"Brevo is not configured on this Worker."};
- const senderName=env.BREVO_SENDER_NAME||"UnPredictMe";
+async function sendBird(env,email,p,firstName=""){
+ if(!env.BIRD_API_KEY||!env.BIRD_SENDER_EMAIL)return {ok:false,error:"Bird is not configured on this Worker."};
+ const senderName=env.BIRD_SENDER_NAME||"UnPredictMe";
  const htmlEmail='<!doctype html><html><body style="margin:0;background:#f7f4ff;font-family:Arial,sans-serif;color:#08070b;"><div style="max-width:620px;margin:0 auto;padding:40px 20px;"><div style="background:#fff;border-radius:28px;padding:36px;"><div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#655f70;">UnPredictMe</div><p style="font-size:18px;color:#4f4a58;">Hi '+escapeHtml(firstName)+',</p><h1 style="font-size:34px;letter-spacing:-.04em;">We found 3 things.</h1><p style="font-size:18px;line-height:1.6;color:#5d5766;">No quiz. No birth chart. Just a playful read from one tiny clue.</p><div style="background:#eee7ff;border-radius:20px;padding:22px;margin:20px 0;"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#655f70;">01 · Prediction</div><h2 style="font-size:24px;margin:8px 0;">'+escapeHtml(p.title)+'</h2><p style="font-size:17px;line-height:1.55;color:#3e3947;margin:0;">'+escapeHtml(p.text)+'</p></div><div style="border:1px solid #d7cdf0;border-radius:20px;padding:22px;margin:14px 0;"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#655f70;">02 · Something you hate</div><h2 style="font-size:23px;margin:8px 0;">'+escapeHtml(p.hate||"We’re keeping this one unpredictable.")+'</h2></div><div style="border:1px solid #d7cdf0;border-radius:20px;padding:22px;margin:14px 0;"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#655f70;">03 · Something you’ll like</div><h2 style="font-size:23px;margin:8px 0;">'+escapeHtml(p.like||"We’re keeping this one unpredictable.")+'</h2></div><p style="color:#655f70;font-weight:700;">Come back tomorrow. We’ll make another guess.</p></div></div></body></html>'
- const r=await fetch("https://api.brevo.com/v3/smtp/email",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","api-key":env.BREVO_API_KEY},body:JSON.stringify({sender:{email:env.BREVO_SENDER_EMAIL,name:senderName},to:[{email,name:firstName}],replyTo:{email:env.BREVO_SENDER_EMAIL,name:senderName},subject:"Your UnPredictMe prediction ✨",htmlContent:htmlEmail,tags:["unpredictme_prediction"]})});
+ const base=env.BIRD_API_BASE_URL||"https://us1.platform.bird.com";
+ const r=await fetch(base+"/v1/email/messages",{method:"POST",headers:{"accept":"application/json","content-type":"application/json","authorization":"Bearer "+env.BIRD_API_KEY},body:JSON.stringify({from:{email:env.BIRD_SENDER_EMAIL,name:senderName},to:[{email,name:firstName}],reply_to:[{email:env.BIRD_SENDER_EMAIL,name:senderName}],subject:"Your UnPredictMe prediction ✨",html:htmlEmail,category:"transactional",tags:[{name:"source",value:"unpredictme_prediction"}]})});
  const data=await r.json().catch(()=>({}));
- if(!r.ok)return {ok:false,status:r.status,error:String(data.message||data.code||"Brevo rejected the email.")};
- return {ok:true,messageId:data.messageId||null};
+ if(!r.ok)return {ok:false,status:r.status,error:String(data.message||data.code||"Bird rejected the email.")};
+ return {ok:true,messageId:data.id||null,status:data.status||"accepted"};
 }
 const questions=[
 ["It’s Saturday morning. Your ideal start is…",[["slow","A slow start. Coffee, no rush."],["out","Already out doing something."],["productive","Knock something off the list."],["random","See what happens."]]],
@@ -153,7 +164,7 @@ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta nam
     var button=form.querySelector("button");
     button.disabled=true;
     button.textContent="Sending…";
-    fetch("/api/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,firstName:firstName,prediction:prediction,marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The email service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){if(!d.emailSent)throw new Error(d.emailError||d.error||"The email could not be sent.");button.textContent="Sent ✓";track("prediction_email_sent");note.innerHTML="<strong>Prediction accepted.</strong> Brevo accepted the email request.<br><small>Message ID: "+esc(d.messageId||"not returned")+"</small><br><br>Check your inbox and spam folder.";}).catch(function(err){button.disabled=false;button.textContent="UnPredict Me?";track("prediction_email_failed");note.innerHTML="<strong>Prediction ready.</strong> We couldn’t send the email yet — "+esc(err.message)+".";});
+    fetch("/api/send",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({email:email,firstName:firstName,prediction:prediction,marketing:marketing})}).then(function(r){return r.text().then(function(t){var d;try{d=JSON.parse(t)}catch(_){throw new Error("The email service returned an invalid response.")}d._httpStatus=r.status;return d})}).then(function(d){if(!d.emailSent)throw new Error(d.emailError||d.error||"The email could not be sent.");button.textContent="Sent ✓";track("prediction_email_sent");note.innerHTML="<strong>Prediction accepted.</strong> Bird accepted the email request.<br><small>Message ID: "+esc(d.messageId||"not returned")+"</small><br><br>Check your inbox and spam folder.";}).catch(function(err){button.disabled=false;button.textContent="UnPredict Me?";track("prediction_email_failed");note.innerHTML="<strong>Prediction ready.</strong> We couldn’t send the email yet — "+esc(err.message)+".";});
   }
   function page(title,body){app.innerHTML='<section class="card page"><div class="eyebrow">'+esc(title.toUpperCase())+'</div><h2>'+esc(title)+'</h2>'+body+'</section>'}
   function route(){
@@ -236,9 +247,9 @@ https://unpredictme.com/
   try{const body=await request.json(),email=String(body.email||"").trim().toLowerCase(),firstName=String(body.firstName||"").trim().slice(0,60),prediction=body.prediction||{};
    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return Response.json({error:"Please enter a valid email."},{status:400});
    if(!firstName)return Response.json({error:"Please enter your first name."},{status:400});
-   const emailResult=await sendBrevo(env,email,prediction,firstName);
+   const emailResult=await sendBird(env,email,prediction,firstName);
    if(!emailResult.ok)return Response.json({error:"Prediction created, but email delivery failed.",emailSent:false,emailError:emailResult.error,emailStatus:emailResult.status||null},{status:502});
-   const contactResult=await addBrevoContact(env,email,firstName,!!body.marketing);
+   const contactResult=await addBirdContact(env,email,firstName,!!body.marketing);
    return Response.json({
     emailSent:true,
     messageId:emailResult.messageId||null,
